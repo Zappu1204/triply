@@ -1,0 +1,64 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+
+spring:
+  application:
+    name: smart-travel-backend
+
+  # Disable Redis auto-configuration if Redis is not available
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+
+  # Database Configuration
+  datasource:
+    url: jdbc:mysql://localhost:3306/travelapp?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+    username: usernamemysql
+    password: passwordmysql
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:}
+            client-secret: ${GOOGLE_CLIENT_SECRET:}
+
+# External APIs Configuration
+external-apis:
+  google-maps:
+    api-key: ${GOOGLE_MAPS_API_KEY:}
+  openweathermap:
+    api-key: ${WEATHER_API_KEY:}
+    base-url: https://api.openweathermap.org/data/2.5
+  firebase:
+    service-account-key: ${FIREBASE_SERVICE_KEY:}
+
+# Logging
+logging:
+  level:
+    com.travelapp: DEBUG
+    org.springframework.security: DEBUG
+
+# JWT Configuration
+app:
+  jwt:
+    secret: ${APP_JWT_SECRET:}
+    expiration: 86400000
