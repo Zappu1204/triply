@@ -7,12 +7,6 @@ spring:
   application:
     name: smart-travel-backend
 
-  # Disable Redis auto-configuration if Redis is not available
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
-      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
-
   # Database Configuration
   datasource:
     url: jdbc:mysql://localhost:3306/travelapp?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
@@ -50,6 +44,8 @@ external-apis:
     base-url: https://api.openweathermap.org/data/2.5
   firebase:
     service-account-key: ${FIREBASE_SERVICE_KEY:}
+  perplexity:
+    api-key: ${PERPLEXITY_API_KEY:}
 
 # Logging
 logging:
