@@ -12,3 +12,4 @@ public interface TripFlightRepository extends JpaRepository<TripFlight, Integer>
 }
 
 
+

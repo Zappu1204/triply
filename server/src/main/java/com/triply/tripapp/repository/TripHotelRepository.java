@@ -12,3 +12,4 @@ public interface TripHotelRepository extends JpaRepository<TripHotel, Integer> {
 }
 
 
+

@@ -2,6 +2,7 @@ package com.triply.tripapp.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.triply.tripapp.entity.*;
 import com.triply.tripapp.integration.PerplexityClient;
@@ -63,7 +64,8 @@ public class TripPlanningService {
 
     public static class PlanResponse {
         public List<JsonNode> flights = new ArrayList<>();
-        public List<JsonNode> flightDetails = new ArrayList<>();
+        public List<JsonNode> flightBest = new ArrayList<>();
+        public List<JsonNode> flightOther = new ArrayList<>();
         public List<JsonNode> hotels = new ArrayList<>();
         public List<JsonNode> attractions = new ArrayList<>();
         public List<JsonNode> weather = new ArrayList<>();
@@ -83,7 +85,7 @@ public class TripPlanningService {
     private PlanResponse planScenario1(PlanRequest req) throws IOException {
         PlanResponse response = new PlanResponse();
         
-        BigDecimal flightCapPerPerson = req.budget.multiply(BigDecimal.valueOf(0.3)).divide(BigDecimal.valueOf(req.people));
+        BigDecimal flightCapPerPerson = req.budget.multiply(BigDecimal.valueOf(0.45)).divide(BigDecimal.valueOf(req.people));
         BigDecimal lodgingCap = req.budget.multiply(BigDecimal.valueOf(0.3));
         BigDecimal attractionsCap = req.budget.multiply(BigDecimal.valueOf(0.1));
 
@@ -108,7 +110,7 @@ public class TripPlanningService {
             String serpJson = serpApiClient.searchGoogleFlights(
                 dep,
                 arr,
-                airlineIdListStr,
+                "", //airlineIdListStr,
                 String.valueOf(req.startDate),
                 String.valueOf(req.endDate),
                 "VND",
@@ -117,7 +119,16 @@ public class TripPlanningService {
                 "vn"
             );
             JsonNode moreBestFlights = extractMoreBestFlights(serpJson);
-            addAll(response.flightDetails, moreBestFlights);
+            JsonNode moreOtherFlights = extractMoreOtherFlights(serpJson);
+            // Chỉ lấy tối đa 5 kết quả trong More Other Flights
+            if (moreOtherFlights != null && moreOtherFlights.size() > 5) {
+                ArrayNode newFlights = objectMapper.createArrayNode();
+                for (int i = 0; i < 5 && i < moreOtherFlights.size(); i++) {
+                    newFlights.add(moreOtherFlights.get(i));
+                }
+            }
+            addAll(response.flightBest, moreBestFlights);
+            addAll(response.flightOther, moreOtherFlights);
         }
 
         // Replace Perplexity hotels with SerpAPI Google Hotels
@@ -307,6 +318,13 @@ public class TripPlanningService {
         JsonNode root = objectMapper.readTree(serpJson);
         JsonNode bestFlights = root.path("best_flights");
         return bestFlights.isMissingNode() ? objectMapper.createArrayNode() : bestFlights;
+    }
+
+    private JsonNode extractMoreOtherFlights(String serpJson) throws IOException {
+        if (serpJson == null || serpJson.isBlank()) return null;
+        JsonNode root = objectMapper.readTree(serpJson);
+        JsonNode otherFlights = root.path("other_flights");
+        return otherFlights.isMissingNode() ? objectMapper.createArrayNode() : otherFlights;
     }
 
     private void addAll(List<JsonNode> target, JsonNode array) {

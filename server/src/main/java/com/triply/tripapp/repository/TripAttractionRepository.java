@@ -13,3 +13,4 @@ public interface TripAttractionRepository extends JpaRepository<TripAttraction, 
 }
 
 
+
