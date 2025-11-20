@@ -113,6 +113,55 @@ public class SerpApiClient {
             throw new BadRequestException("SerpAPI URL lỗi: " + e.getMessage());
         }
     }
+
+    /**
+     * Search Google Maps for tourist attractions and historical sites
+     * @param query Search query (e.g., "tourist attractions, historical sites")
+     * @param latitude Latitude of the city
+     * @param longitude Longitude of the city
+     * @param zoom Zoom level (default 13)
+     * @param hl Language (default "vi")
+     * @param gl Country (default "vn")
+     * @return JSON response as String
+     * @throws IOException if request fails
+     */
+    public String searchGoogleMaps(String query,
+                                   String latitude,
+                                   String longitude,
+                                   String zoom,
+                                   String hl,
+                                   String gl) throws IOException {
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new BadRequestException("Thiếu API key SerpAPI. Vui lòng cấu hình 'external-apis.serpapi.api-key' trong application.yml");
+        }
+
+        try (CloseableHttpClient client = HttpClients.createDefault()) {
+            URIBuilder builder = new URIBuilder("https://serpapi.com/search.json");
+            builder.addParameter("api_key", apiKey)
+                    .addParameter("engine", "google_maps")
+                    .addParameter("type", "search")
+                    .addParameter("google_domain", "google.com.vn")
+                    .addParameter("q", query)
+                    .addParameter("lat", latitude)
+                    .addParameter("lon", longitude)
+                    .addParameter("z", zoom == null ? "13" : zoom)
+                    .addParameter("hl", hl == null ? "vi" : hl)
+                    .addParameter("gl", gl == null ? "vn" : gl);
+
+            HttpGet get = new HttpGet(builder.build());
+            try (CloseableHttpResponse response = client.execute(get)) {
+                int status = response.getCode();
+                String body = response.getEntity() == null ? "" : new String(response.getEntity().getContent().readAllBytes(), StandardCharsets.UTF_8);
+                if (status >= 200 && status < 300) {
+                    return body;
+                }
+                String snippet = body.substring(0, Math.min(body.length(), 500));
+                throw new BadRequestException("SerpAPI trả về lỗi (" + status + "): " + snippet);
+            }
+        } catch (URISyntaxException e) {
+            throw new BadRequestException("SerpAPI URL lỗi: " + e.getMessage());
+        }
+    }
 }
 
 

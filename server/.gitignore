@@ -29,5 +29,14 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### VS Code ###
+*.md
+*.json
+*.txt
+**/application.yml
+**/a.properties
+
+### VS Code ###.idea
 .vscode/
+.idea/
+
+**/META-INF/

@@ -37,6 +37,10 @@ public class Account {
     @Column(name = "socialProvider", length = 100)
     private SocialProvider socialProvider;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", length = 20, nullable = false)
+    private Role role = Role.USER;
+
     @Column(name = "tbl_CustomercustomerId", nullable = false)
     private Integer customerId;
 

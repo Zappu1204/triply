@@ -3,6 +3,7 @@ package com.triply.tripapp.service;
 import com.triply.tripapp.entity.Account;
 import com.triply.tripapp.repository.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -24,9 +25,10 @@ public class CustomUserDetailsService implements UserDetailsService {
         Account account = accountRepository.findByUserName(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
 
+        String role = account.getRole() != null ? account.getRole().name() : "USER";
         return User.withUsername(account.getUserName())
                 .password(account.getPasswordHash() == null ? "" : account.getPasswordHash())
-                .authorities(Collections.emptyList())
+                .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role)))
                 .accountExpired(false)
                 .accountLocked(false)
                 .credentialsExpired(false)

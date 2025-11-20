@@ -8,6 +8,7 @@ import com.triply.tripapp.dto.response.CustomerInfo;
 import com.triply.tripapp.entity.Account;
 import com.triply.tripapp.entity.Customer;
 import com.triply.tripapp.entity.SocialProvider;
+import com.triply.tripapp.entity.Role;
 import com.triply.tripapp.repository.AccountRepository;
 import com.triply.tripapp.repository.CustomerRepository;
 import com.triply.tripapp.util.JwtUtil;
@@ -65,6 +66,7 @@ public class AuthService {
         account.setUserName(request.getUserName());
         account.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         account.setSocialProvider(SocialProvider.LOCAL);
+        account.setRole(Role.USER);
         account.setCustomerId(savedCustomer.getCustomerId());
         Account savedAccount = accountRepository.save(account);
 
@@ -132,6 +134,7 @@ public class AuthService {
                 account = new Account();
                 account.setUserName(info.getEmail());
                 account.setSocialProvider(SocialProvider.GOOGLE);
+                account.setRole(Role.USER);
                 account.setCustomerId(customer.getCustomerId());
                 account = accountRepository.save(account);
             }
@@ -145,6 +148,7 @@ public class AuthService {
             account.setUserName(info.getEmail());
             account.setPasswordHash("");
             account.setSocialProvider(SocialProvider.GOOGLE);
+            account.setRole(Role.USER);
             account.setCustomerId(customer.getCustomerId());
             account = accountRepository.save(account);
         }
