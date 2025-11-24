@@ -12,4 +12,5 @@ public interface DestinationRepository extends JpaRepository<Destination, Intege
     List<Destination> findByCityId(Integer cityId);
     Optional<Destination> findByPlaceId(String placeId);
     boolean existsByPlaceId(String placeId);
+    Optional<Destination> findByName(String name);
 }

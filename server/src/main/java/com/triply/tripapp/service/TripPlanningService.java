@@ -53,6 +53,15 @@ public class TripPlanningService {
     @Autowired
     private WeatherRecommendationService weatherRecommendationService;
 
+    @Autowired
+    private TripFlightRepository tripFlightRepository;
+
+    @Autowired
+    private TripHotelRepository tripHotelRepository;
+
+    @Autowired
+    private TripAttractionRepository tripAttractionRepository;
+
     public static class PlanRequest {
         public BigDecimal budget;
         public LocalDate startDate;
@@ -346,7 +355,7 @@ public class TripPlanningService {
 
     @Transactional
     public Trip savePlannedTrip(Integer customerId, String title, LocalDate start, LocalDate end, BigDecimal totalBudget,
-                                String currency, List<ItineraryItem> items, List<Expense> estimatedExpenses) {
+                                String currency, List<com.triply.tripapp.controller.TripPlanningController.ItineraryItemRequest> items, List<Expense> estimatedExpenses) {
         Trip trip = new Trip();
         trip.setTripName(title);
         trip.setStartDate(start);
@@ -361,8 +370,30 @@ public class TripPlanningService {
         budgetRepository.save(budget);
 
         if (items != null) {
-            for (ItineraryItem item : items) {
+            for (com.triply.tripapp.controller.TripPlanningController.ItineraryItemRequest itemReq : items) {
+                // Validate destinationName
+                if (itemReq.destinationName == null || itemReq.destinationName.trim().isEmpty()) {
+                    throw new IllegalArgumentException("Destination name cannot be null or empty");
+                }
+                
+                String destName = itemReq.destinationName.trim();
+                
+                // Find or create destination
+                Destination destination = destinationRepository.findByName(destName)
+                        .orElseGet(() -> {
+                            Destination newDest = new Destination();
+                            newDest.setName(destName);
+                            newDest.setCreatedAt(java.time.LocalDateTime.now());
+                            return destinationRepository.save(newDest);
+                        });
+
+                // Create itinerary item
+                ItineraryItem item = new ItineraryItem();
                 item.setTripId(savedTrip.getTripId());
+                item.setDestinationId(destination.getDestinationId());
+                item.setArrivalDate(itemReq.arrivalDate);
+                item.setDepartureDate(itemReq.departureDate);
+                item.setNotes(itemReq.notes);
                 itineraryItemRepository.save(item);
             }
         }
@@ -375,6 +406,109 @@ public class TripPlanningService {
         }
 
         return savedTrip;
+    }
+
+    @Transactional
+    public Integer saveCompleteTripPlan(Integer customerId, com.triply.tripapp.controller.TripPlanningController.SaveFullPlanRequest req) {
+        // 1. Create and save Trip
+        Trip trip = new Trip();
+        trip.setTripName(req.title);
+        trip.setStartDate(req.startDate);
+        trip.setEndDate(req.endDate);
+        trip.setCustomerId(customerId);
+        Trip savedTrip = tripRepository.save(trip);
+        Integer tripId = savedTrip.getTripId();
+
+        // 2. Create and save Budget
+        Budget budget = new Budget();
+        budget.setTripId(tripId);
+        budget.setTotalAmount(req.totalBudget);
+        budget.setCurrency(req.currency);
+        Budget savedBudget = budgetRepository.save(budget);
+
+        // 3. Save Itinerary Items (destinations)
+        if (req.destinations != null && !req.destinations.isEmpty()) {
+            for (com.triply.tripapp.controller.TripPlanningController.ItineraryItemRequest itemReq : req.destinations) {
+                if (itemReq.destinationName == null || itemReq.destinationName.trim().isEmpty()) {
+                    throw new IllegalArgumentException("Destination name cannot be null or empty");
+                }
+                
+                String destName = itemReq.destinationName.trim();
+                
+                // Find or create destination
+                Destination destination = destinationRepository.findByName(destName)
+                        .orElseGet(() -> {
+                            Destination newDest = new Destination();
+                            newDest.setName(destName);
+                            newDest.setCreatedAt(java.time.LocalDateTime.now());
+                            return destinationRepository.save(newDest);
+                        });
+
+                // Create itinerary item
+                ItineraryItem item = new ItineraryItem();
+                item.setTripId(tripId);
+                item.setDestinationId(destination.getDestinationId());
+                item.setArrivalDate(itemReq.arrivalDate);
+                item.setDepartureDate(itemReq.departureDate);
+                item.setNotes(itemReq.notes);
+                itineraryItemRepository.save(item);
+            }
+        }
+
+        // 4. Save Flight information
+        if (req.flight != null) {
+            TripFlight flight = new TripFlight();
+            flight.setTripId(tripId);
+            flight.setDepartureId(req.flight.departureId);
+            flight.setArrivalId(req.flight.arrivalId);
+            flight.setAirline(req.flight.airline);
+            flight.setAirlineId(req.flight.airlineId);
+            flight.setPriceVnd(req.flight.priceVnd);
+            flight.setFlightDuration(req.flight.flightDuration);
+            flight.setDepartureTime(req.flight.departureTime);
+            flight.setArrivalTime(req.flight.arrivalTime);
+            tripFlightRepository.save(flight);
+        }
+
+        // 5. Save Hotel information
+        if (req.hotel != null) {
+            TripHotel hotel = new TripHotel();
+            hotel.setTripId(tripId);
+            hotel.setName(req.hotel.name);
+            hotel.setAddress(req.hotel.address);
+            hotel.setLatitude(req.hotel.latitude);
+            hotel.setLongitude(req.hotel.longitude);
+            hotel.setPriceTotalVnd(req.hotel.priceTotalVnd);
+            tripHotelRepository.save(hotel);
+        }
+
+        // 6. Save daily attractions
+        if (req.dailyAttractions != null && !req.dailyAttractions.isEmpty()) {
+            for (com.triply.tripapp.controller.TripPlanningController.TripAttractionRequest attrReq : req.dailyAttractions) {
+                TripAttraction attraction = new TripAttraction();
+                attraction.setTripId(tripId);
+                attraction.setDate(attrReq.date);
+                attraction.setTime(attrReq.time);
+                attraction.setActivity(attrReq.activity);
+                attraction.setLocation(attrReq.location);
+                attraction.setReason(attrReq.reason);
+                tripAttractionRepository.save(attraction);
+            }
+        }
+
+        // 7. Save expenses
+        if (req.expenses != null && !req.expenses.isEmpty()) {
+            for (com.triply.tripapp.controller.TripPlanningController.ExpenseRequest expReq : req.expenses) {
+                Expense expense = new Expense();
+                expense.setBudgetId(savedBudget.getBudgetId());
+                expense.setAmount(expReq.amount);
+                expense.setCategory(expReq.category);
+                expense.setDate(expReq.date);
+                expenseRepository.save(expense);
+            }
+        }
+
+        return tripId;
     }
 }
 

@@ -29,8 +29,15 @@ public class TripPlanningController {
         public LocalDate endDate;
         public BigDecimal totalBudget;
         public String currency;
-        public List<ItineraryItem> items;
+        public List<ItineraryItemRequest> items;
         public List<Expense> estimatedExpenses;
+    }
+
+    public static class ItineraryItemRequest {
+        public String destinationName;  // Changed from destinationId to destinationName
+        public LocalDate arrivalDate;
+        public LocalDate departureDate;
+        public String notes;
     }
 
     @Autowired
@@ -56,16 +63,57 @@ public class TripPlanningController {
     }
 
     public static class SaveFullPlanRequest {
-        public Integer tripId;
-        public TripFlight flight;
-        public TripHotel hotel;
-        public List<TripAttraction> attractions;
+        public String title;
+        public LocalDate startDate;
+        public LocalDate endDate;
+        public Integer numberOfPeople;
+        public BigDecimal totalBudget;
+        public String currency;
+        public List<ItineraryItemRequest> destinations;
+        public TripFlightRequest flight;
+        public TripHotelRequest hotel;
+        public List<TripAttractionRequest> dailyAttractions;
+        public List<ExpenseRequest> expenses;
+    }
+
+    public static class TripFlightRequest {
+        public String departureId;
+        public String arrivalId;
+        public String airline;
+        public String airlineId;
+        public Integer priceVnd;
+        public String flightDuration;
+        public String departureTime;
+        public String arrivalTime;
+    }
+
+    public static class TripHotelRequest {
+        public String name;
+        public String address;
+        public Double latitude;
+        public Double longitude;
+        public Integer priceTotalVnd;
+    }
+
+    public static class TripAttractionRequest {
+        public String date;
+        public String time;
+        public String activity;
+        public String location;
+        public String reason;
+    }
+
+    public static class ExpenseRequest {
+        public BigDecimal amount;
+        public String category;
+        public LocalDate date;
     }
 
     @PostMapping("/save-full")
-    public ResponseEntity<Integer> saveFull(@RequestBody SaveFullPlanRequest req) {
-        Integer id = tripPersistenceService.saveFullPlan(req.tripId, req.flight, req.hotel, req.attractions);
-        return ResponseEntity.ok(id);
+    public ResponseEntity<Integer> saveFull(Authentication authentication, @RequestBody SaveFullPlanRequest req) {
+        Integer customerId = authUtil.getCustomerId(authentication);
+        Integer tripId = tripPlanningService.saveCompleteTripPlan(customerId, req);
+        return ResponseEntity.ok(tripId);
     }
 
     @PostMapping("/{tripId}/flight")
