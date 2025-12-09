@@ -76,17 +76,27 @@ public class PerplexityClient {
         }
         msgs.append("]");
 
-        String payload = "{\n" +
-                "  \"model\": \"sonar-pro\",\n" +
-                "  \"messages\": " + msgs + ",\n" +
-                "  \"response_format\": {\n" +
-                "    \"type\": \"json_schema\",\n" +
-                "    \"json_schema\": {\n" +
-                "      \"schema\": " + (jsonSchema == null ? "null" : jsonSchema) + "\n" +
-                "    }\n" +
-                "  }\n" +
-                "}";
-        post.setEntity(new StringEntity(payload, ContentType.APPLICATION_JSON));
+        // Xây dựng payload - chỉ thêm response_format nếu có jsonSchema
+        StringBuilder payloadBuilder = new StringBuilder();
+        payloadBuilder.append("{\n");
+        payloadBuilder.append("  \"model\": \"sonar-pro\",\n");
+        payloadBuilder.append("  \"messages\": ").append(msgs);
+        
+        if (jsonSchema != null && !jsonSchema.trim().isEmpty()) {
+            payloadBuilder.append(",\n");
+            payloadBuilder.append("  \"response_format\": {\n");
+            payloadBuilder.append("    \"type\": \"json_schema\",\n");
+            payloadBuilder.append("    \"json_schema\": {\n");
+            payloadBuilder.append("      \"schema\": ").append(jsonSchema).append("\n");
+            payloadBuilder.append("    }\n");
+            payloadBuilder.append("  }\n");
+        } else {
+            payloadBuilder.append("\n");
+        }
+        
+        payloadBuilder.append("}");
+        
+        post.setEntity(new StringEntity(payloadBuilder.toString(), ContentType.APPLICATION_JSON));
 
         try (CloseableHttpClient client = HttpClients.createDefault();
              CloseableHttpResponse response = client.execute(post)) {
