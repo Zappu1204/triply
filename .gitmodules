@@ -1,0 +1,3 @@
+[submodule "TriplyFE"]
+	path = TriplyFE
+	url = https://github.com/dihnhuonq130104/TriplyFE.git
